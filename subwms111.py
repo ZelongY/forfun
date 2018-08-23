@@ -440,7 +440,7 @@ class SubContentMetadata(ContentMetadata):
         bbs = elem.findall(subcommon.nspath('BoundingBox', WMS_NAMESPACE))
         if not bbs:
             crs_list = []
-            for bb in :
+            for bb in bbs:
                 srs_str = bb.attrib.get('SRS', None)                
                 srs = Crs(srs_str)    
                 box = tuple(map(float, [bb.attrib['minx'], bb.attrib['miny'], bb.attrib['maxx'], bb.attrib['maxy']]))
@@ -451,9 +451,8 @@ class SubContentMetadata(ContentMetadata):
                     # reverse things
                     minx, miny, maxx, maxy = box[1], box[0], box[3], box[2]    
                 crs_list.append(( minx, miny, maxx, maxy,srs_str))
-                
-        if len(crs_list) > 0:
             self.crs_list = crs_list
+            
         elif self.parent:
             self.crs_list = self.parent.crs_list
         else:
@@ -461,7 +460,7 @@ class SubContentMetadata(ContentMetadata):
             
         # and maintain the original boundingBox attribute (first in list)
         # or the wgs84 bbox (to handle cases of incomplete parentage)
-        self.boundingBox = crs_list[0] if crs_list else self.boundingBoxWGS84
+        self.boundingBox = self.crs_list[0] if self.crs_list else self.boundingBoxWGS84
 
         # SRS options
         self.crsOptions = []
@@ -546,7 +545,7 @@ class SubContentMetadata(ContentMetadata):
             
         # MetadataURLs
         self.metadataUrls = []
-        for m in elem.findall(subcommon.nspath('MetadataURL',ns=WMS_NAMESPACE)):
+        for m in elem.findall(subcommon.nspath('MetadataURL',ns = WMS_NAMESPACE)):
             metadataUrl = {
 #                 'type': testXMLValue(m.attrib['type'], attrib=True),
 #                 'format': testXMLValue(m.find(subcommon.nspath('Format',ns=WMS_NAMESPACE))),

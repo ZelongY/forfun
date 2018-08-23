@@ -689,8 +689,6 @@ class SubContentMetadata(ContentMetadata):
                     # reverse things
                     minx, miny, maxx, maxy = box[1], box[0], box[3], box[2]
                 crs_list.append((minx, miny, maxx, maxy, srs_str))
-            
-        if len(crs_list) > 0:
             self.crs_list = crs_list
         elif self.parent:
             self.crs_list = self.parent.crs_list
@@ -699,7 +697,7 @@ class SubContentMetadata(ContentMetadata):
                 
         # and maintain the original boundingBox attribute (first in list) 
         # or the wgs84 bbox (to handle cases of incomplete parentage)
-        self.boundingBox = crs_list[0] if crs_list else self.boundingBoxWGS84
+        self.boundingBox = self.crs_list[0] if self.crs_list else self.boundingBoxWGS84
 
         # TODO: get this from the bbox attributes instead (deal with parents)
         # SRS options
@@ -730,11 +728,9 @@ class SubContentMetadata(ContentMetadata):
 
         # Styles
         self.styles = {}
-
         # Copy any parent styles (they are inheritable properties)
         if self.parent:
             self.styles = self.parent.styles.copy()
-
         # Get the styles for this layer (items with the same name are replaced)
         for s in elem.findall(subcommon.nspath('Style', WMS_NAMESPACE)):
             name = s.find(subcommon.nspath('Name', WMS_NAMESPACE))
@@ -750,7 +746,6 @@ class SubContentMetadata(ContentMetadata):
             legend = s.find(subcommon.nspath('LegendURL/OnlineResource', WMS_NAMESPACE))
             if legend is not None:
                 style['legend'] = legend.attrib['{http://www.w3.org/1999/xlink}href']
-
             lgd = s.find(subcommon.nspath('LegendURL', WMS_NAMESPACE))
             if lgd is not None:
                 if 'width' in lgd.attrib.keys():
@@ -809,7 +804,6 @@ class SubContentMetadata(ContentMetadata):
                 'format': testXMLValue(m.find(subcommon.nspath('Format', WMS_NAMESPACE))),
                 'url': testXMLValue(m.find(subcommon.nspath('OnlineResource', WMS_NAMESPACE)).attrib['{http://www.w3.org/1999/xlink}href'], attrib=True)
             }
-
             if metadataUrl['url'] is not None and parse_remote_metadata:  # download URL
                 try:
                     content = openURL(metadataUrl['url'], timeout=timeout)
