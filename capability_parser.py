@@ -263,7 +263,10 @@ def list2str_with_semicolons(list_variable):
 '''
 Update WMS layer metadata
 '''
-def update_layer_metadata(layer,urlid, srs, bbox, style): 
+def update_layer_metadata(layer,urlid, srs, bbox, style):
+    elements_dict = {} 
+    
+    elements = ['title', 'abstract', 'keywords', 'boundingboxWGS84', 'attribution', 'styles', 'metadataurl'] 
     import re
     layerid = str(urlid) + layer.layerid
     if layer.title:
@@ -319,10 +322,15 @@ def update_service_metadata(wms, url):
         columns = ', '.join(elements_dict.keys())
         sql_insert = "INSERT INTO qose_wms_metadata ( %s ) VALUES ( %s )" % (columns, placeholders)
         db.setBySql(sql_insert, elements_dict.values())
+        sql_select = "select id from qose_wms_metadata where url='{}'".format(url)
+        records = db.getBySql(sql_select)
+        id = records[0][0]
     else:
         id = records[0][0]
         sql_update = 'UPDATE qose_wms_metadata SET {} where id={}'.format(', '.join('{} = %s'.format(k) for k in elements_dict), id)
         db.setBySql(sql_update, elements_dict.values())
+        
+    return id
     
 '''
 Thumbnails cache and metadata update
@@ -348,7 +356,7 @@ def wms_getMap(url):
         return
     
     # Update or insert WMS service metadata
-    update_service_metadata(wms, url)
+    service_id = update_service_metadata(wms, url)
     
     # 
 #     getmap_format = None
@@ -369,24 +377,23 @@ def wms_getMap(url):
 #         logger.exception('No GetMap operation is detected for WMS {} {}',format(urlid, url))
 #         return None    
 #             
-#     contents = wms.contents
-#     for layerName in contents:
-#         print(layerName)
-#         layer = wms[layerName]
-#         
-#         # SRS and boundingBox decision
-#         try:
-#             [srs, boundingBox] = srs_bbox_selection(layer)
-#         except:
-#             logger.exception('Error in downloading map for layer {} in WMS {} {}'.format(layerName,urlid, url))
-#             continue
-#         
-#         # Map size and style decision
-#         mapsize = mapSize(layer.fixedWidth, layer.fixedHeight, boundingBox)        
-#         style = style_selection(layer.styles)
-#         
-#         # Insert layer record into the owsLayerMD table
-#         update_layer_metadata(layer, urlid, srs, boundingBox, style)
+    contents = wms.contents
+    for layerName in contents:
+        print layerName
+        layer = wms[layerName]
+        # SRS and boundingBox decision
+        try:
+            [srs, boundingBox] = srs_bbox_selection(layer)
+        except:
+            logger.exception('Error in downloading map for layer {} in WMS {} {}'.format(layerName,urlid, url))
+            continue
+         
+        # Map size and style decision
+        mapsize = mapSize(layer.fixedWidth, layer.fixedHeight, boundingBox)        
+        style = style_selection(layer.styles)
+         
+        # Insert layer record into the owsLayerMD table
+        update_layer_metadata(layer, urlid, srs, boundingBox, style)
 #         
 #         # Download layer map thumbnail
 #         try:    
